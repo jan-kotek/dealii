@@ -2817,6 +2817,37 @@ public:
    */
   void reinit (const typename Triangulation<dim,spacedim>::cell_iterator &cell);
 
+  //JFK taylor - maybe remove original lines (2802-2818) when run
+
+    /* Computes shape functions, gradients, etc. at the specified
+     *  @p points. We do not compute quadrature points, jacobians, normals
+     *  etc. which depend on the cell mapping. This will be used only
+     *  while computing the WENO limiter.
+     */
+  template <template <int, int> class DoFHandlerType, bool level_dof_access>
+    void reinit
+       (
+       const TriaIterator<DoFCellAccessor<DoFHandlerType<dim,spacedim>,level_dof_access> > &cell,
+       const std::vector< Point<spacedim> >& points //taylor
+       );
+
+    /* Computes shape functions, gradients, etc. at the specified
+     *  @p points. We do not compute quadrature points, jacobians, normals
+     *  etc. which depend on the cell mapping. This will be used only
+     *  while computing the WENO limiter.
+     */
+    void reinit
+       (
+       const typename Triangulation<dim,spacedim>::cell_iterator &cell,
+       const std::vector< Point<spacedim> >& points //taylor
+       );
+
+  //JFK taylor end
+
+
+
+
+
   /**
    * Return a reference to the copy of the quadrature formula stored by this
    * object.
@@ -3190,6 +3221,8 @@ private:
   void do_reinit (const unsigned int face_no,
                   const unsigned int subface_no);
 };
+
+
 
 
 #ifndef DOXYGEN
