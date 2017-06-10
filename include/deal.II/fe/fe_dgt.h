@@ -569,7 +569,8 @@ protected:
                   const Quadrature<dim>                                 &quadrature,
                   const typename Mapping<dim,spacedim>::InternalDataBase      &mapping_internal,
                   const typename Mapping<dim,spacedim>::InternalDataBase      &fe_internal,
-                  FEValuesData<dim,spacedim>                            &data,
+                  const internal::FEValues::MappingRelatedData<dim,spacedim> &mapping_data,
+                  internal::FEValues::FiniteElementRelatedData<dim,spacedim> &output_data,
                   const CellSimilarity::Similarity                       cell_similarity) const;
 
   /**
@@ -584,7 +585,8 @@ protected:
                        const Quadrature<dim-1>                &quadrature,
                        const typename Mapping<dim,spacedim>::InternalDataBase      &mapping_internal,
                        const typename Mapping<dim,spacedim>::InternalDataBase      &fe_internal,
-                       FEValuesData<dim,spacedim> &data) const ;
+                       const internal::FEValues::MappingRelatedData<dim,spacedim> &mapping_data,
+                       internal::FEValues::FiniteElementRelatedData<dim,spacedim> &output_data const;
 
   /**
    * Implementation of the same
@@ -599,7 +601,8 @@ protected:
                           const Quadrature<dim-1>                &quadrature,
                           const typename Mapping<dim,spacedim>::InternalDataBase      &mapping_internal,
                           const typename Mapping<dim,spacedim>::InternalDataBase      &fe_internal,
-                          FEValuesData<dim,spacedim> &data) const ;
+                          const internal::FEValues::MappingRelatedData<dim,spacedim> &mapping_data,
+                          internal::FEValues::FiniteElementRelatedData<dim,spacedim> &output_data const;
 
 private:
 
