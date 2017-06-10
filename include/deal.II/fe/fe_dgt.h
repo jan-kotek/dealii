@@ -1,5 +1,6 @@
 // ---------------------------------------------------------------------
-// $Id: fe_dgp_nonparametric.h 30036 2013-07-18 16:55:32Z maier $
+// jfk 15.12.14
+// fe_dgp_nonparametric.h 30036 2013-07-18 16:55:32Z maier $
 //
 // Copyright (C) 2002 - 2013 by the deal.II authors
 //
@@ -14,19 +15,18 @@
 //
 // ---------------------------------------------------------------------
 
-#ifndef __dealii__fe_dgt_h
-#define __dealii__fe_dgt_h
+#ifndef dealii__fe_dgt_h
+#define dealii__fe_dgt_h
 
 #include <deal.II/base/config.h>
 #include <deal.II/base/polynomial.h>
 #include <deal.II/base/polynomial_space.h>
 #include <deal.II/fe/fe.h>
-#include <deal.II/fe/mapping.h>
 
 DEAL_II_NAMESPACE_OPEN
 
 template <int dim> class PolynomialSpace;
-template <int dim, int spacedim> class MappingQ; //probably not good in 8.5!!!
+template <int dim, int spacedim> class MappingQ;
 
 
 /*!@addtogroup fe */
@@ -79,15 +79,6 @@ public:
    * values.
    */
   virtual std::string get_name () const;
-
-
-  /* for documentation, see the FiniteElement base class, added by jfk 8.5
-  virtual
-  UpdateFlags
-  requires_update_flags (const UpdateFlags update_flags) const;
-  //jfk end*/
-
-
 
   /**
    * Return the value of the
@@ -576,10 +567,10 @@ protected:
   fill_fe_values (const Mapping<dim,spacedim> &mapping,
                   const typename Triangulation<dim,spacedim>::cell_iterator &cell,
                   const Quadrature<dim>                                 &quadrature,
-                  typename Mapping<dim,spacedim>::InternalDataBase      &mapping_internal,
-                  typename Mapping<dim,spacedim>::InternalDataBase      &fe_internal,
+                  const typename Mapping<dim,spacedim>::InternalDataBase      &mapping_internal,
+                  const typename Mapping<dim,spacedim>::InternalDataBase      &fe_internal,
                   FEValuesData<dim,spacedim>                            &data,
-                  CellSimilarity::Similarity                       &cell_similarity) const;
+                  const CellSimilarity::Similarity                       cell_similarity) const;
 
   /**
    * Implementation of the same
@@ -591,8 +582,8 @@ protected:
                        const typename Triangulation<dim,spacedim>::cell_iterator &cell,
                        const unsigned int                    face_no,
                        const Quadrature<dim-1>                &quadrature,
-                       typename Mapping<dim,spacedim>::InternalDataBase      &mapping_internal,
-                       typename Mapping<dim,spacedim>::InternalDataBase      &fe_internal,
+                       const typename Mapping<dim,spacedim>::InternalDataBase      &mapping_internal,
+                       const typename Mapping<dim,spacedim>::InternalDataBase      &fe_internal,
                        FEValuesData<dim,spacedim> &data) const ;
 
   /**
@@ -606,8 +597,8 @@ protected:
                           const unsigned int                    face_no,
                           const unsigned int                    sub_no,
                           const Quadrature<dim-1>                &quadrature,
-                          typename Mapping<dim,spacedim>::InternalDataBase      &mapping_internal,
-                          typename Mapping<dim,spacedim>::InternalDataBase      &fe_internal,
+                          const typename Mapping<dim,spacedim>::InternalDataBase      &mapping_internal,
+                          const typename Mapping<dim,spacedim>::InternalDataBase      &fe_internal,
                           FEValuesData<dim,spacedim> &data) const ;
 
 private:
@@ -675,22 +666,6 @@ private:
    */
   const PolynomialSpace<dim> polynomial_space;
 
-  /**
-   * Fields of cell-independent data.
-   *
-   * For information about the
-   * general purpose of this class,
-   * see the documentation of the
-   * base class.
-   */
-  class InternalData : public FiniteElement<dim,spacedim>::InternalDataBase
-  {
-  public:
-    // have some scratch arrays
-    std::vector<double> values;
-    std::vector<Tensor<1,dim> > grads;
-    std::vector<Tensor<2,dim> > grad_grads;
-  };
 
   /**
    * Allow access from other dimensions.

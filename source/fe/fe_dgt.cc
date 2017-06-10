@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------
-// $Id: fe_dgp_nonparametric.cc 30037 2013-07-18 16:55:40Z maier $
+//  fe_dgp_nonparametric.cc 30037 2013-07-18 16:55:40Z maier $
 //
 // Copyright (C) 2002 - 2013 by the deal.II authors
 //
@@ -106,7 +106,9 @@ FE_DGT<dim,spacedim>::get_name () const
   // have to be kept in synch
 
   std::ostringstream namebuf;
-  namebuf << "FE_DGT<" << dim << ">(" << degree << ")";
+  namebuf << "FE_DGT<"
+		  << Utilities::dim_string(dim,spacedim)
+		  << ">(" << degree << ")";
 
   return namebuf.str();
 }
@@ -183,6 +185,7 @@ FE_DGT<dim,spacedim>::shape_value_component
     const Point<dim> &p,
     const unsigned int component) const
 {
+  (void)component;
   Assert (i<this->dofs_per_cell, ExcIndexRange(i, 0, this->dofs_per_cell));
   Assert (component == 0, ExcIndexRange (component, 0, 1));
   const Point<dim> pp = (p - cell->center()) / cell->diameter();
@@ -342,8 +345,10 @@ FE_DGT<dim,spacedim>::get_data (
   const Mapping<dim,spacedim> &,
   const Quadrature<dim> &) const
 {
-  // generate a new data object
-  InternalData *data = new InternalData;
+  // generate a new data object jfk 20.7.15 rewrite
+  typename FiniteElement<dim,spacedim>::InternalDataBase *data
+    = new typename FiniteElement<dim,spacedim>::InternalDataBase;
+  data->update_each = requires_update_flags(update_flags);
   // check what needs to be
   // initialized only once and what
   // on every cell/face/subface we
@@ -352,25 +357,10 @@ FE_DGT<dim,spacedim>::get_data (
   data->update_each = update_each(update_flags);
   data->update_flags = data->update_once | data->update_each;
 
-  const UpdateFlags flags(data->update_flags);
+  // other than that, there is nothing we can add here as discussed
+  // in the general documentation of this class
 
-  // initialize fields only if really
-  // necessary. otherwise, don't
-  // allocate memory
-  if (flags & update_values)
-    {
-      data->values.resize (this->dofs_per_cell);
-    }
-
-  if (flags & update_gradients)
-    {
-      data->grads.resize (this->dofs_per_cell);
-    }
-
-  if (flags & update_hessians)
-    {
-      data->grad_grads.resize (this->dofs_per_cell);
-    }
+  
   return data;
 }
 
@@ -386,39 +376,39 @@ FE_DGT<dim,spacedim>::fill_fe_values (
   const Mapping<dim,spacedim> &,
   const typename Triangulation<dim,spacedim>::cell_iterator & cell,
   const Quadrature<dim> &,
-  typename Mapping<dim,spacedim>::InternalDataBase &,
-  typename Mapping<dim,spacedim>::InternalDataBase &fedata,
+  const typename Mapping<dim,spacedim>::InternalDataBase &,
+  const typename Mapping<dim,spacedim>::InternalDataBase &fe_data,
   FEValuesData<dim,spacedim> &data,
-  CellSimilarity::Similarity &/*cell_similarity*/) const
+  const CellSimilarity::Similarity /*cell_similarity*/) const
 {
-  // convert data object to internal
-  // data for this class. fails with
-  // an exception if that is not
-  // possible
-  Assert (dynamic_cast<InternalData *> (&fedata) != 0,
-          ExcInternalError());
-  InternalData &fe_data = static_cast<InternalData &> (fedata);
+ 
 
   const UpdateFlags flags(fe_data.current_update_flags());
   Assert (flags & update_quadrature_points, ExcInternalError());
 
   const unsigned int n_q_points = data.quadrature_points.size();
-  double h = cell->diameter();
+  
+ std::vector<double> values(flags & update_values ? this->dofs_per_cell : 0);
+ std::vector<Tensor<1,dim> > grads(flags & update_gradients ? this->dofs_per_cell : 0);
+ std::vector<Tensor<2,dim> > grad_grads(flags & update_hessians ? this->dofs_per_cell : 0);
+  
+  
+  double h = cell->diameter(); //taylor
 
   if (flags & (update_values | update_gradients))
     for (unsigned int i=0; i<n_q_points; ++i)
       {
-        const Point<dim> p = (data.quadrature_points[i] - cell->center())/h;
+        const Point<dim> p = (data.quadrature_points[i] - cell->center())/h; //taylor
         polynomial_space.compute(p, //data.quadrature_points[i],
-                                 fe_data.values, fe_data.grads, fe_data.grad_grads);
+                                 values, grads, grad_grads);
         for (unsigned int k=0; k<this->dofs_per_cell; ++k)
           {
             if (flags & update_values)
-              data.shape_values[k][i] = fe_data.values[k];
+              data.shape_values[k][i] = values[k];
             if (flags & update_gradients)
-              data.shape_gradients[k][i] = fe_data.grads[k]/h;
+              data.shape_gradients[k][i] = grads[k]/h; //taylor
             if (flags & update_hessians)
-              data.shape_hessians[k][i] = fe_data.grad_grads[k]/h/h;
+              data.shape_hessians[k][i] = grad_grads[k]/h/h; //taylor
           }
       }
 }
@@ -432,38 +422,36 @@ FE_DGT<dim,spacedim>::fill_fe_face_values (
   const typename Triangulation<dim,spacedim>::cell_iterator & cell,
   const unsigned int,
   const Quadrature<dim-1>&,
-  typename Mapping<dim,spacedim>::InternalDataBase &,
-  typename Mapping<dim,spacedim>::InternalDataBase       &fedata,
+  const typename Mapping<dim,spacedim>::InternalDataBase &,
+  const typename Mapping<dim,spacedim>::InternalDataBase       &fe_data,
   FEValuesData<dim,spacedim>                             &data) const
 {
-  // convert data object to internal
-  // data for this class. fails with
-  // an exception if that is not
-  // possible
-  Assert (dynamic_cast<InternalData *> (&fedata) != 0,
-          ExcInternalError());
-  InternalData &fe_data = static_cast<InternalData &> (fedata);
+ 
 
   const UpdateFlags flags(fe_data.update_once | fe_data.update_each);
   Assert (flags & update_quadrature_points, ExcInternalError());
 
   const unsigned int n_q_points = data.quadrature_points.size();
-  double h = cell->diameter();
+  
+ std::vector<double> values(flags & update_values ? this->dofs_per_cell : 0);
+ std::vector<Tensor<1,dim> > grads(flags & update_gradients ? this->dofs_per_cell : 0);
+ std::vector<Tensor<2,dim> > grad_grads(flags & update_hessians ? this->dofs_per_cell : 0);
+  double h = cell->diameter(); //taylor
 
   if (flags & (update_values | update_gradients))
     for (unsigned int i=0; i<n_q_points; ++i)
       {
-        const Point<dim> p = (data.quadrature_points[i] - cell->center())/h;
+        const Point<dim> p = (data.quadrature_points[i] - cell->center())/h; //taylor
         polynomial_space.compute(p, //data.quadrature_points[i],
-                                 fe_data.values, fe_data.grads, fe_data.grad_grads);
+                                 values, grads, grad_grads);
         for (unsigned int k=0; k<this->dofs_per_cell; ++k)
           {
             if (flags & update_values)
-              data.shape_values[k][i] = fe_data.values[k];
+              data.shape_values[k][i] = values[k];
             if (flags & update_gradients)
-              data.shape_gradients[k][i] = fe_data.grads[k]/h;
+              data.shape_gradients[k][i] =grads[k]/h;
             if (flags & update_hessians)
-              data.shape_hessians[k][i] = fe_data.grad_grads[k]/h/h;
+              data.shape_hessians[k][i] = grad_grads[k]/h/h;
           }
       }
 }
@@ -478,38 +466,36 @@ FE_DGT<dim,spacedim>::fill_fe_subface_values (
   const unsigned int,
   const unsigned int,
   const Quadrature<dim-1>&,
-  typename Mapping<dim,spacedim>::InternalDataBase &,
-  typename Mapping<dim,spacedim>::InternalDataBase       &fedata,
+  const typename Mapping<dim,spacedim>::InternalDataBase &,
+  const typename Mapping<dim,spacedim>::InternalDataBase       &fe_data,
   FEValuesData<dim,spacedim>                             &data) const
 {
-  // convert data object to internal
-  // data for this class. fails with
-  // an exception if that is not
-  // possible
-  Assert (dynamic_cast<InternalData *> (&fedata) != 0,
-          ExcInternalError());
-  InternalData &fe_data = static_cast<InternalData &> (fedata);
-
+  
   const UpdateFlags flags(fe_data.update_once | fe_data.update_each);
   Assert (flags & update_quadrature_points, ExcInternalError());
 
   const unsigned int n_q_points = data.quadrature_points.size();
-  double h = cell->diameter();
+  
+  std::vector<double> values(flags & update_values ? this->dofs_per_cell : 0);
+  std::vector<Tensor<1,dim> > grads(flags & update_gradients ? this->dofs_per_cell : 0);
+  std::vector<Tensor<2,dim> > grad_grads(flags & update_hessians ? this->dofs_per_cell : 0);  
+  
+  double h = cell->diameter(); //taylor
 
   if (flags & (update_values | update_gradients))
     for (unsigned int i=0; i<n_q_points; ++i)
       {
-        const Point<dim> p = (data.quadrature_points[i] - cell->center())/h;
+        const Point<dim> p = (data.quadrature_points[i] - cell->center())/h; //taylor
         polynomial_space.compute(p, //data.quadrature_points[i],
-                                 fe_data.values, fe_data.grads, fe_data.grad_grads);
+                                 values, grads, grad_grads);  
         for (unsigned int k=0; k<this->dofs_per_cell; ++k)
           {
             if (flags & update_values)
-              data.shape_values[k][i] = fe_data.values[k];
+              data.shape_values[k][i] = values[k];
             if (flags & update_gradients)
-              data.shape_gradients[k][i] = fe_data.grads[k]/h;
+              data.shape_gradients[k][i] = grads[k]/h; 
             if (flags & update_hessians)
-              data.shape_hessians[k][i] = fe_data.grad_grads[k]/h/h;
+              data.shape_hessians[k][i] = grad_grads[k]/h/h;  
           }
       }
 }
