@@ -312,6 +312,7 @@ UpdateFlags
 FE_DGT<dim,spacedim>::requires_update_flags (const UpdateFlags flags) const
 {
   return update_once(flags) | update_each(flags);
+}
 
 template <int dim, int spacedim>
 UpdateFlags
@@ -345,12 +346,13 @@ FE_DGT<dim,spacedim>::update_each (const UpdateFlags flags) const
 
 template <int dim, int spacedim>
 typename FiniteElement<dim,spacedim>::InternalDataBase *
-FE_DGT<dim,spacedim>::get_data (
-  const UpdateFlags      update_flags,
-  const Mapping<dim,spacedim> &,
-  const Quadrature<dim> &) const
+FE_DGT<dim,spacedim>::
+get_data (const UpdateFlags                                                    update_flags,
+          const Mapping<dim,spacedim> &,
+          const Quadrature<dim> &,
+          dealii::internal::FEValues::FiniteElementRelatedData<dim, spacedim> &/*output_data*/) const
 {
-  // generate a new data object jfk 20.7.15 rewrite
+  // generate a new data object
   typename FiniteElement<dim,spacedim>::InternalDataBase *data
     = new typename FiniteElement<dim,spacedim>::InternalDataBase;
   data->update_each = update_once(update_flags) | update_each(update_flags);   // FIX: only update_each required
@@ -371,33 +373,29 @@ FE_DGT<dim,spacedim>::get_data (
 template <int dim, int spacedim>
 void
 FE_DGT<dim,spacedim>::
-fill_fe_values (
-  const Mapping<dim,spacedim> &,
-  const typename Triangulation<dim,spacedim>::cell_iterator & cell,
-  const Quadrature<dim> &,
-  const typename Mapping<dim,spacedim>::InternalDataBase &,
-  const typename FiniteElement<dim,spacedim>::InternalDataBase &fe_data,
-  const internal::FEValues::MappingRelatedData<dim,spacedim> &mapping_data,
-  internal::FEValues::FiniteElementRelatedData<dim,spacedim> &output_data,
-  const CellSimilarity::Similarity /*cell_similarity*/) const
+fill_fe_values (const typename Triangulation<dim,spacedim>::cell_iterator &,
+                const CellSimilarity::Similarity                                     ,
+                const Quadrature<dim> &,
+                const Mapping<dim,spacedim> &,
+                const typename Mapping<dim,spacedim>::InternalDataBase &,
+                const dealii::internal::FEValues::MappingRelatedData<dim, spacedim> &mapping_data,
+                const typename FiniteElement<dim,spacedim>::InternalDataBase        &fe_internal,
+                dealii::internal::FEValues::FiniteElementRelatedData<dim, spacedim> &output_data) const
 {
- 
-
-
-  Assert (fe_data.update_each & update_quadrature_points, ExcInternalError());
+  Assert (fe_internal.update_each & update_quadrature_points, ExcInternalError());
 
   const unsigned int n_q_points = mapping_data.quadrature_points.size();
   
- std::vector<double> values(fe_data.update_each & update_values ? this->dofs_per_cell : 0);
- std::vector<Tensor<1,dim> > grads(fe_data.update_each & update_gradients ? this->dofs_per_cell : 0);
- std::vector<Tensor<2,dim> > grad_grads(fe_data.update_each & update_hessians ? this->dofs_per_cell : 0);
- std::vector<Tensor<3,dim> > empty_vector_of_3rd_order_tensors; //not used here, as well as elsewhere. not added everywhere!
- std::vector<Tensor<4,dim> > empty_vector_of_4th_order_tensors; //same as above and not well implemented in deal
+  std::vector<double> values(fe_internal.update_each & update_values ? this->dofs_per_cell : 0);
+  std::vector<Tensor<1,dim> > grads(fe_internal.update_each & update_gradients ? this->dofs_per_cell : 0);
+  std::vector<Tensor<2,dim> > grad_grads(fe_internal.update_each & update_hessians ? this->dofs_per_cell : 0);
+  std::vector<Tensor<3,dim> > empty_vector_of_3rd_order_tensors;//not used here, as well as elsewhere. not added everywhere!
+  std::vector<Tensor<4,dim> > empty_vector_of_4th_order_tensors; //same as above and not well implemented in deal
   
   
   double h = cell->diameter(); //taylor
 
-  if (fe_data.update_each & (update_values | update_gradients))
+  if (fe_internal.update_each & (update_values | update_gradients))
     for (unsigned int i=0; i<n_q_points; ++i)
       {
         const Point<dim> p = (mapping_data.quadrature_points[i] - cell->center())/h; //taylor
@@ -424,31 +422,31 @@ fill_fe_values (
 template <int dim, int spacedim>
 void
 FE_DGT<dim,spacedim>::
-fill_fe_face_values (
-  const Mapping<dim,spacedim> &,
-  const typename Triangulation<dim,spacedim>::cell_iterator & cell,
-  const unsigned int,
-  const Quadrature<dim-1>&,
-  const typename Mapping<dim,spacedim>::InternalDataBase &,
-  const typename FiniteElement<dim,spacedim>::InternalDataBase       &fe_data,
-  const internal::FEValues::MappingRelatedData<dim,spacedim> &mapping_data,
-  internal::FEValues::FiniteElementRelatedData<dim,spacedim> &output_data) const
+fill_fe_face_values (const typename Triangulation<dim,spacedim>::cell_iterator &,
+                     const unsigned int                                                   ,
+                     const Quadrature<dim-1>                                             &,
+                     const Mapping<dim,spacedim> &,
+                     const typename Mapping<dim,spacedim>::InternalDataBase &,
+                     const dealii::internal::FEValues::MappingRelatedData<dim, spacedim> &mapping_data,
+                     const typename FiniteElement<dim,spacedim>::InternalDataBase        &fe_internal,
+                     dealii::internal::FEValues::FiniteElementRelatedData<dim, spacedim> &output_data) const
 {
  
 
 
-  Assert (fe_data.update_each & update_quadrature_points, ExcInternalError());
+  Assert (fe_internal.update_each & update_quadrature_points, ExcInternalError());
 
   const unsigned int n_q_points = mapping_data.quadrature_points.size();
   
- std::vector<double> values(fe_data.update_each & update_values ? this->dofs_per_cell : 0);
- std::vector<Tensor<1,dim> > grads(fe_data.update_each & update_gradients ? this->dofs_per_cell : 0);
- std::vector<Tensor<2,dim> > grad_grads(fe_data.update_each & update_hessians ? this->dofs_per_cell : 0);
+ std::vector<double> values(fe_internal.update_each & update_values ? this->dofs_per_cell : 0);
+ std::vector<Tensor<1,dim> > grads(fe_internal.update_each & update_gradients ? this->dofs_per_cell : 0);
+ std::vector<Tensor<2,dim> > grad_grads(fe_internal.update_each & update_hessians ? this->dofs_per_cell : 0);
  std::vector<Tensor<3,dim> > empty_vector_of_3rd_order_tensors; //not used here, as well as elsewhere. not added everywhere!
  std::vector<Tensor<4,dim> > empty_vector_of_4th_order_tensors;
+ 
   double h = cell->diameter(); //taylor
 
-  if (fe_data.update_each & (update_values | update_gradients))
+  if (fe_internal.update_each & (update_values | update_gradients))
     for (unsigned int i=0; i<n_q_points; ++i)
       {
         const Point<dim> p = (mapping_data.quadrature_points[i] - cell->center())/h; //taylor
@@ -475,32 +473,29 @@ fill_fe_face_values (
 template <int dim, int spacedim>
 void
 FE_DGT<dim,spacedim>::
-fill_fe_subface_values (
-  const Mapping<dim,spacedim> &,
-  const typename Triangulation<dim,spacedim>::cell_iterator & cell,
-  const unsigned int,
-  const unsigned int,
-  const Quadrature<dim-1>&,
-  const typename Mapping<dim,spacedim>::InternalDataBase &,
-  const typename FiniteElement<dim,spacedim>::InternalDataBase       &fe_data,
-  const internal::FEValues::MappingRelatedData<dim,spacedim> &mapping_data,
-  internal::FEValues::FiniteElementRelatedData<dim,spacedim> &output_data) const
+fill_fe_subface_values (const typename Triangulation<dim,spacedim>::cell_iterator &,
+                        const unsigned int                                                   ,
+                        const unsigned int                                                   ,
+                        const Quadrature<dim-1>                                             &,
+                        const Mapping<dim,spacedim> &,
+                        const typename Mapping<dim,spacedim>::InternalDataBase &,
+                        const dealii::internal::FEValues::MappingRelatedData<dim, spacedim> &mapping_data,
+                        const typename FiniteElement<dim,spacedim>::InternalDataBase        &fe_internal,
+                        dealii::internal::FEValues::FiniteElementRelatedData<dim, spacedim> &output_data) const
 {
-  
- 
-  Assert (fe_data.update_each & update_quadrature_points, ExcInternalError());
+  Assert (fe_internal.update_each & update_quadrature_points, ExcInternalError());
 
   const unsigned int n_q_points = mapping_data.quadrature_points.size();
-  
-  std::vector<double> values(fe_data.update_each & update_values ? this->dofs_per_cell : 0);
-  std::vector<Tensor<1,dim> > grads(fe_data.update_each & update_gradients ? this->dofs_per_cell : 0);
-  std::vector<Tensor<2,dim> > grad_grads(fe_data.update_each & update_hessians ? this->dofs_per_cell : 0);  
-  std::vector<Tensor<3,dim> > empty_vector_of_3rd_order_tensors; //not used here, as well as elsewhere. not added everywhere!
+
+  std::vector<double> values(fe_internal.update_each & update_values ? this->dofs_per_cell : 0);
+  std::vector<Tensor<1,dim> > grads(fe_internal.update_each & update_gradients ? this->dofs_per_cell : 0);
+  std::vector<Tensor<2,dim> > grad_grads(fe_internal.update_each & update_hessians ? this->dofs_per_cell : 0);
+  std::vector<Tensor<3,dim> > empty_vector_of_3rd_order_tensors;
   std::vector<Tensor<4,dim> > empty_vector_of_4th_order_tensors;
   
   double h = cell->diameter(); //taylor
 
-  if (fe_data.update_each & (update_values | update_gradients))
+  if (fe_internal.update_each & (update_values | update_gradients))
     for (unsigned int i=0; i<n_q_points; ++i)
       {
         const Point<dim> p = (mapping_data.quadrature_points[i] - cell->center())/h; //taylor
