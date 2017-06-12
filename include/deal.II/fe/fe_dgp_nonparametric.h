@@ -606,6 +606,7 @@ private:
    */
   const PolynomialSpace<dim> polynomial_space;
 
+
   /**
    * Allow access from other dimensions.
    */

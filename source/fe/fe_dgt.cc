@@ -307,6 +307,11 @@ FE_DGT<dim,spacedim>::get_dpo_vector (const unsigned int deg)
   return dpo;
 }
 
+template <int dim, int spacedim>
+UpdateFlags
+FE_DGT<dim,spacedim>::requires_update_flags (const UpdateFlags flags) const
+{
+  return update_once(flags) | update_each(flags);
 
 template <int dim, int spacedim>
 UpdateFlags
@@ -339,7 +344,7 @@ FE_DGT<dim,spacedim>::update_each (const UpdateFlags flags) const
 //---------------------------------------------------------------------------
 
 template <int dim, int spacedim>
-typename Mapping<dim,spacedim>::InternalDataBase *
+typename FiniteElement<dim,spacedim>::InternalDataBase *
 FE_DGT<dim,spacedim>::get_data (
   const UpdateFlags      update_flags,
   const Mapping<dim,spacedim> &,
@@ -348,14 +353,7 @@ FE_DGT<dim,spacedim>::get_data (
   // generate a new data object jfk 20.7.15 rewrite
   typename FiniteElement<dim,spacedim>::InternalDataBase *data
     = new typename FiniteElement<dim,spacedim>::InternalDataBase;
-  data->update_each = requires_update_flags(update_flags);
-  // check what needs to be
-  // initialized only once and what
-  // on every cell/face/subface we
-  // visit
-  data->update_once = update_once(update_flags);
-  data->update_each = update_each(update_flags);
-  data->update_flags = data->update_once | data->update_each;
+  data->update_each = update_once(update_flags) | update_each(update_flags);   // FIX: only update_each required
 
   // other than that, there is nothing we can add here as discussed
   // in the general documentation of this class
@@ -378,40 +376,46 @@ fill_fe_values (
   const typename Triangulation<dim,spacedim>::cell_iterator & cell,
   const Quadrature<dim> &,
   const typename Mapping<dim,spacedim>::InternalDataBase &,
-  const typename Mapping<dim,spacedim>::InternalDataBase &fe_data,
+  const typename FiniteElement<dim,spacedim>::InternalDataBase &fe_data,
   const internal::FEValues::MappingRelatedData<dim,spacedim> &mapping_data,
   internal::FEValues::FiniteElementRelatedData<dim,spacedim> &output_data,
   const CellSimilarity::Similarity /*cell_similarity*/) const
 {
  
 
-  const UpdateFlags flags(fe_data.current_update_flags());
-  Assert (flags & update_quadrature_points, ExcInternalError());
+
+  Assert (fe_data.update_each & update_quadrature_points, ExcInternalError());
 
   const unsigned int n_q_points = mapping_data.quadrature_points.size();
   
- std::vector<double> values(flags & update_values ? this->dofs_per_cell : 0);
- std::vector<Tensor<1,dim> > grads(flags & update_gradients ? this->dofs_per_cell : 0);
- std::vector<Tensor<2,dim> > grad_grads(flags & update_hessians ? this->dofs_per_cell : 0);
+ std::vector<double> values(fe_data.update_each & update_values ? this->dofs_per_cell : 0);
+ std::vector<Tensor<1,dim> > grads(fe_data.update_each & update_gradients ? this->dofs_per_cell : 0);
+ std::vector<Tensor<2,dim> > grad_grads(fe_data.update_each & update_hessians ? this->dofs_per_cell : 0);
+ std::vector<Tensor<3,dim> > empty_vector_of_3rd_order_tensors; //not used here, as well as elsewhere. not added everywhere!
+ std::vector<Tensor<4,dim> > empty_vector_of_4th_order_tensors; //same as above and not well implemented in deal
   
   
   double h = cell->diameter(); //taylor
 
-  if (flags & (update_values | update_gradients))
+  if (fe_data.update_each & (update_values | update_gradients))
     for (unsigned int i=0; i<n_q_points; ++i)
       {
         const Point<dim> p = (mapping_data.quadrature_points[i] - cell->center())/h; //taylor
         polynomial_space.compute(p, //mapping_data.quadrature_points[i],
-                                 values, grads, grad_grads);
-        for (unsigned int k=0; k<this->dofs_per_cell; ++k)
-          {
-            if (flags & update_values)
-              output_data.shape_values[k][i] = values[k];
-            if (flags & update_gradients)
-              output_data.shape_gradients[k][i] = grads[k]/h; //taylor
-            if (flags & update_hessians)
-              output_data.shape_hessians[k][i] = grad_grads[k]/h/h; //taylor
-          }
+                                 values, grads, grad_grads,
+                                 empty_vector_of_3rd_order_tensors,
+                                 empty_vector_of_4th_order_tensors);
+        if (fe_internal.update_each & update_values)
+          for (unsigned int k=0; k<this->dofs_per_cell; ++k)
+            output_data.shape_values[k][i] = values[k];
+
+        if (fe_internal.update_each & update_gradients)
+          for (unsigned int k=0; k<this->dofs_per_cell; ++k)
+            output_data.shape_gradients[k][i] = grads[k]/h;
+
+        if (fe_internal.update_each & update_hessians)
+          for (unsigned int k=0; k<this->dofs_per_cell; ++k)
+            output_data.shape_hessians[k][i] = grad_grads[k]/h/h;//might want to add higher derivatives
       }
 }
 
@@ -426,37 +430,43 @@ fill_fe_face_values (
   const unsigned int,
   const Quadrature<dim-1>&,
   const typename Mapping<dim,spacedim>::InternalDataBase &,
-  const typename Mapping<dim,spacedim>::InternalDataBase       &fe_data,
+  const typename FiniteElement<dim,spacedim>::InternalDataBase       &fe_data,
   const internal::FEValues::MappingRelatedData<dim,spacedim> &mapping_data,
   internal::FEValues::FiniteElementRelatedData<dim,spacedim> &output_data) const
 {
  
 
-  const UpdateFlags flags(fe_data.update_once | fe_data.update_each);
-  Assert (flags & update_quadrature_points, ExcInternalError());
+
+  Assert (fe_data.update_each & update_quadrature_points, ExcInternalError());
 
   const unsigned int n_q_points = mapping_data.quadrature_points.size();
   
- std::vector<double> values(flags & update_values ? this->dofs_per_cell : 0);
- std::vector<Tensor<1,dim> > grads(flags & update_gradients ? this->dofs_per_cell : 0);
- std::vector<Tensor<2,dim> > grad_grads(flags & update_hessians ? this->dofs_per_cell : 0);
+ std::vector<double> values(fe_data.update_each & update_values ? this->dofs_per_cell : 0);
+ std::vector<Tensor<1,dim> > grads(fe_data.update_each & update_gradients ? this->dofs_per_cell : 0);
+ std::vector<Tensor<2,dim> > grad_grads(fe_data.update_each & update_hessians ? this->dofs_per_cell : 0);
+ std::vector<Tensor<3,dim> > empty_vector_of_3rd_order_tensors; //not used here, as well as elsewhere. not added everywhere!
+ std::vector<Tensor<4,dim> > empty_vector_of_4th_order_tensors;
   double h = cell->diameter(); //taylor
 
-  if (flags & (update_values | update_gradients))
+  if (fe_data.update_each & (update_values | update_gradients))
     for (unsigned int i=0; i<n_q_points; ++i)
       {
         const Point<dim> p = (mapping_data.quadrature_points[i] - cell->center())/h; //taylor
         polynomial_space.compute(p, //mapping_data.quadrature_points[i],
-                                 values, grads, grad_grads);
-        for (unsigned int k=0; k<this->dofs_per_cell; ++k)
-          {
-            if (flags & update_values)
-              output_data.shape_values[k][i] = values[k];
-            if (flags & update_gradients)
-              output_data.shape_gradients[k][i] =grads[k]/h;
-            if (flags & update_hessians)
-              output_data.shape_hessians[k][i] = grad_grads[k]/h/h;
-          }
+                                 values, grads, grad_grads,
+                                 empty_vector_of_3rd_order_tensors,
+                                 empty_vector_of_4th_order_tensors);
+        if (fe_internal.update_each & update_values)
+          for (unsigned int k=0; k<this->dofs_per_cell; ++k)
+            output_data.shape_values[k][i] = values[k];
+
+        if (fe_internal.update_each & update_gradients)
+          for (unsigned int k=0; k<this->dofs_per_cell; ++k)
+            output_data.shape_gradients[k][i] = grads[k]/h;
+
+        if (fe_internal.update_each & update_hessians)
+          for (unsigned int k=0; k<this->dofs_per_cell; ++k)
+            output_data.shape_hessians[k][i] = grad_grads[k]/h/h;//might want to add higher derivatives
       }
 }
 
@@ -472,37 +482,43 @@ fill_fe_subface_values (
   const unsigned int,
   const Quadrature<dim-1>&,
   const typename Mapping<dim,spacedim>::InternalDataBase &,
-  const typename Mapping<dim,spacedim>::InternalDataBase       &fe_data,
+  const typename FiniteElement<dim,spacedim>::InternalDataBase       &fe_data,
   const internal::FEValues::MappingRelatedData<dim,spacedim> &mapping_data,
   internal::FEValues::FiniteElementRelatedData<dim,spacedim> &output_data) const
 {
   
-  const UpdateFlags flags(fe_data.update_once | fe_data.update_each);
-  Assert (flags & update_quadrature_points, ExcInternalError());
+ 
+  Assert (fe_data.update_each & update_quadrature_points, ExcInternalError());
 
   const unsigned int n_q_points = mapping_data.quadrature_points.size();
   
-  std::vector<double> values(flags & update_values ? this->dofs_per_cell : 0);
-  std::vector<Tensor<1,dim> > grads(flags & update_gradients ? this->dofs_per_cell : 0);
-  std::vector<Tensor<2,dim> > grad_grads(flags & update_hessians ? this->dofs_per_cell : 0);  
+  std::vector<double> values(fe_data.update_each & update_values ? this->dofs_per_cell : 0);
+  std::vector<Tensor<1,dim> > grads(fe_data.update_each & update_gradients ? this->dofs_per_cell : 0);
+  std::vector<Tensor<2,dim> > grad_grads(fe_data.update_each & update_hessians ? this->dofs_per_cell : 0);  
+  std::vector<Tensor<3,dim> > empty_vector_of_3rd_order_tensors; //not used here, as well as elsewhere. not added everywhere!
+  std::vector<Tensor<4,dim> > empty_vector_of_4th_order_tensors;
   
   double h = cell->diameter(); //taylor
 
-  if (flags & (update_values | update_gradients))
+  if (fe_data.update_each & (update_values | update_gradients))
     for (unsigned int i=0; i<n_q_points; ++i)
       {
         const Point<dim> p = (mapping_data.quadrature_points[i] - cell->center())/h; //taylor
         polynomial_space.compute(p, //mapping_data.quadrature_points[i],
-                                 values, grads, grad_grads);  
-        for (unsigned int k=0; k<this->dofs_per_cell; ++k)
-          {
-            if (flags & update_values)
-              output_data.shape_values[k][i] = values[k];
-            if (flags & update_gradients)
-              output_data.shape_gradients[k][i] = grads[k]/h; 
-            if (flags & update_hessians)
-              output_data.shape_hessians[k][i] = grad_grads[k]/h/h;  
-          }
+                                 values, grads, grad_grads,
+                                 empty_vector_of_3rd_order_tensors,
+                                 empty_vector_of_4th_order_tensors);
+        if (fe_internal.update_each & update_values)
+          for (unsigned int k=0; k<this->dofs_per_cell; ++k)
+            output_data.shape_values[k][i] = values[k];
+
+        if (fe_internal.update_each & update_gradients)
+          for (unsigned int k=0; k<this->dofs_per_cell; ++k)
+            output_data.shape_gradients[k][i] = grads[k]/h;
+
+        if (fe_internal.update_each & update_hessians)
+          for (unsigned int k=0; k<this->dofs_per_cell; ++k)
+            output_data.shape_hessians[k][i] = grad_grads[k]/h/h;//might want to add higher derivatives
       }
 }
 
