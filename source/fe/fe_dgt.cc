@@ -1,7 +1,6 @@
 // ---------------------------------------------------------------------
-//  fe_dgp_nonparametric.cc 30037 2013-07-18 16:55:40Z maier $
 //
-// Copyright (C) 2002 - 2013 by the deal.II authors
+// Copyright (C) 2002 - 2017 by the deal.II authors
 //
 // This file is part of the deal.II library.
 //
@@ -39,7 +38,6 @@ FE_DGT<dim,spacedim>::FE_DGT (const unsigned int degree)
     std::vector<ComponentMask>(
       FiniteElementData<dim>(get_dpo_vector(degree),1, degree).dofs_per_cell,
       std::vector<bool>(1,true))),
-  degree(degree),
   polynomial_space (Polynomials::Monomial<double>::generate_complete_basis(degree))
 {
   const unsigned int n_dofs = this->dofs_per_cell;
@@ -99,7 +97,7 @@ std::string
 FE_DGT<dim,spacedim>::get_name () const
 {
   // note that the
-  // FETools::get_fe_from_name
+  // FETools::get_fe_by_name
   // function depends on the
   // particular format of the string
   // this function returns, so they
@@ -108,7 +106,7 @@ FE_DGT<dim,spacedim>::get_name () const
   std::ostringstream namebuf;
   namebuf << "FE_DGT<"
 		  << Utilities::dim_string(dim,spacedim)
-		  << ">(" << degree << ")";
+		  << ">(" << this->degree << ")";
 
   return namebuf.str();
 }
@@ -311,27 +309,7 @@ template <int dim, int spacedim>
 UpdateFlags
 FE_DGT<dim,spacedim>::requires_update_flags (const UpdateFlags flags) const
 {
-  return update_once(flags) | update_each(flags);
-}
-
-template <int dim, int spacedim>
-UpdateFlags
-FE_DGT<dim,spacedim>::update_once (const UpdateFlags) const
-{
-  // for this kind of elements, only
-  // the values can be precomputed
-  // once and for all. set this flag
-  // if the values are requested at
-  // all
-  return update_default;
-}
-
-
-template <int dim, int spacedim>
-UpdateFlags
-FE_DGT<dim,spacedim>::update_each (const UpdateFlags flags) const
-{
-  UpdateFlags out = flags;
+   UpdateFlags out = flags;
 
   if (flags & (update_values | update_gradients | update_hessians))
     out |= update_quadrature_points ;
@@ -355,7 +333,7 @@ get_data (const UpdateFlags                                                    u
   // generate a new data object
   typename FiniteElement<dim,spacedim>::InternalDataBase *data
     = new typename FiniteElement<dim,spacedim>::InternalDataBase;
-  data->update_each = update_once(update_flags) | update_each(update_flags);   // FIX: only update_each required
+  data->update_each = requires_update_flags(update_flags);
 
   // other than that, there is nothing we can add here as discussed
   // in the general documentation of this class
@@ -685,7 +663,7 @@ template <int dim, int spacedim>
 unsigned int
 FE_DGT<dim,spacedim>::get_degree () const
 {
-  return degree;
+  return this->degree;
 }
 
 

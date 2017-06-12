@@ -2,7 +2,7 @@
 // jfk 15.12.14
 // fe_dgp_nonparametric.h 30036 2013-07-18 16:55:32Z maier $
 //
-// Copyright (C) 2002 - 2013 by the deal.II authors
+// Copyright (C) 2002 - 2017 by the deal.II authors
 //
 // This file is part of the deal.II library.
 //
@@ -22,11 +22,12 @@
 #include <deal.II/base/polynomial.h>
 #include <deal.II/base/polynomial_space.h>
 #include <deal.II/fe/fe.h>
+#include <deal.II/fe/mapping.h>
 
 DEAL_II_NAMESPACE_OPEN
 
-template <int dim> class PolynomialSpace;
-template <int dim, int spacedim> class MappingQ;
+template <int dim> class PolynomialSpace;//maybe remove
+template <int dim, int spacedim> class MappingQ;//maybe remove
 
 
 /*!@addtogroup fe */
@@ -244,15 +245,15 @@ public:
       const unsigned int component) const;
 
   /**
-   * Return the tensor of second
-   * derivatives of the @p ith
-   * shape function at point @p p
-   * on the unit cell.  See the
-   * FiniteElement base
-   * class for more information
-   * about the semantics of this
-   * function. This function is not
-   * implemented.
+   * X Return the tensor of second
+   * X derivatives of the @p ith
+   * X shape function at point @p p
+   * X on the unit cell.  See the
+   * X FiniteElement base
+   * X class for more information
+   * X about the semantics of this
+   * X function. This function is not
+   * X implemented.
    */
   virtual Tensor<2,dim> shape_grad_grad (const unsigned int  i,
                                          const Point<dim> &p) const;
@@ -610,52 +611,11 @@ private:
    * be passed to the constructor of
    * @p FiniteElementData.
    */
-  static std::vector<unsigned int> get_dpo_vector (const unsigned int degree);
+  static 
+  std::vector<unsigned int> 
+  get_dpo_vector (const unsigned int degree);
 
-  /**
-   * Given a set of flags indicating
-   * what quantities are requested
-   * from a @p FEValues object,
-   * return which of these can be
-   * precomputed once and for
-   * all. Often, the values of
-   * shape function at quadrature
-   * points can be precomputed, for
-   * example, in which case the
-   * return value of this function
-   * would be the logical and of
-   * the input @p flags and
-   * @p update_values.
-   *
-   * For the present kind of finite
-   * element, this is exactly the
-   * case.
-   */
-  UpdateFlags update_once (const UpdateFlags flags) const;
-
-  /**
-   * This is the opposite to the
-   * above function: given a set of
-   * flags indicating what we want
-   * to know, return which of these
-   * need to be computed each time
-   * we visit a new cell.
-   *
-   * If for the computation of one
-   * quantity something else is
-   * also required (for example, we
-   * often need the covariant
-   * transformation when gradients
-   * need to be computed), include
-   * this in the result as well.
-   */
-   UpdateFlags update_each (const UpdateFlags flags) const;
-
-  /**
-   * Degree of the polynomials.
-   */
-  const unsigned int degree;
-
+ 
   /**
    * Pointer to an object
    * representing the polynomial
@@ -674,7 +634,7 @@ private:
    * access to build_renumbering
    * function.
    */
-  template <int, int> friend class MappingQ;
+  template <int, int> friend class MappingQ;//coud be removed
 //    friend class MappingQ<dim>;
 };
 
