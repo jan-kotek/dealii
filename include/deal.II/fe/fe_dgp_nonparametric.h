@@ -435,6 +435,7 @@ public:
    * Same as hp_vertex_dof_indices(), except that the function treats degrees
    * of freedom on lines.
    *
+   *
    * This being a discontinuous element, the set of such constraints is of
    * course empty.
    */
@@ -469,7 +470,8 @@ public:
    * neither dominates, or if either could dominate.
    *
    * For a definition of domination, see FiniteElementDomination::Domination
-   * and in particular the @ref hp_paper "hp paper".
+   * and in particular the @ref hp_paper "hp paper".//
+   * 
    */
   virtual
   FiniteElementDomination::Domination
@@ -493,7 +495,8 @@ public:
    * This function is made virtual, since finite element objects are usually
    * accessed through pointers to their base class, rather than the class
    * itself.
-   */
+   *///
+   
   virtual std::size_t memory_consumption () const;
 
 
@@ -503,7 +506,8 @@ private:
    * matrices such as constraint and embedding matrices. The definition of the
    * various static fields are in the files <tt>fe_dgp_[123]d.cc</tt> in the
    * source directory.
-   */
+   *///
+   
   struct Matrices
   {
     /**

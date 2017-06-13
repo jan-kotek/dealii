@@ -3737,7 +3737,40 @@ void FEValues<dim,spacedim>::reinit (const typename Triangulation<dim,spacedim>:
   do_reinit ();
 }
 
-//jfk taylor
+
+template <int dim, int spacedim>
+template <template <int, int> class DoFHandlerType, bool lda>
+void
+FEValues<dim,spacedim>::reinit
+(const TriaIterator<DoFCellAccessor<DoFHandlerType<dim,spacedim>, lda> > &cell)
+{
+  // assert that the finite elements
+  // passed to the constructor and
+  // used by the DoFHandler used by
+  // this cell, are the same
+  typedef FEValuesBase<dim,spacedim> FEVB;
+  Assert (static_cast<const FiniteElementData<dim>&>(*this->fe) ==
+          static_cast<const FiniteElementData<dim>&>(cell->get_fe()),
+          typename FEVB::ExcFEDontMatch());
+
+  this->maybe_invalidate_previous_present_cell (cell);
+  this->check_cell_similarity(cell);
+
+  reset_pointer_in_place_if_possible<typename FEValuesBase<dim,spacedim>::template
+  CellIterator<TriaIterator<DoFCellAccessor<DoFHandlerType<dim,spacedim>,
+                                            lda> > > >
+  (this->present_cell, cell);
+
+  // this was the part of the work
+  // that is dependent on the actual
+  // data type of the iterator. now
+  // pass on to the function doing
+  // the real work.
+  do_reinit ();
+}
+
+
+//jfk taylor++++++++++++++++++++++++++++++++++
 
 template <int dim, int spacedim>
 void FEValues<dim,spacedim>::reinit
@@ -3771,13 +3804,14 @@ void FEValues<dim,spacedim>::reinit
    for(unsigned int q=0; q<points.size(); ++q)
       this->quadrature_points[q] = points[q];
    
-   this->get_fe().fill_fe_values(this->get_mapping(),
-                                 *this->present_cell,
-                                 quadrature,
+   this->get_fe().fill_fe_values(*this->present_cell,
+                                 this->cell_similarity,
+                                 this->quadrature,
+                                 this->get_mapping(),
                                  *this->mapping_data,
+                                 this->mapping_output,
                                  *this->fe_data,
-                                 *this,
-                                 this->cell_similarity);
+                                 this->finite_element_output);
    
    this->fe_data->clear_first_cell ();
    this->mapping_data->clear_first_cell ();
@@ -3823,13 +3857,14 @@ FEValues<dim,spacedim>::reinit
    for(unsigned int q=0; q<points.size(); ++q)
       this->quadrature_points[q] = points[q];
    
-   this->get_fe().fill_fe_values(this->get_mapping(),
-                                 *this->present_cell,
-                                 quadrature,
+   this->get_fe().fill_fe_values(*this->present_cell,
+                                 this->cell_similarity,
+                                 this->quadrature,
+                                 this->get_mapping(),
                                  *this->mapping_data,
+                                 this->mapping_output,
                                  *this->fe_data,
-                                 *this,
-                                 this->cell_similarity);
+                                 this->finite_element_output);
    
    this->fe_data->clear_first_cell ();
    this->mapping_data->clear_first_cell ();
@@ -3839,36 +3874,7 @@ FEValues<dim,spacedim>::reinit
 
 
 
-template <int dim, int spacedim>
-template <template <int, int> class DoFHandlerType, bool lda>
-void
-FEValues<dim,spacedim>::reinit
-(const TriaIterator<DoFCellAccessor<DoFHandlerType<dim,spacedim>, lda> > &cell)
-{
-  // assert that the finite elements
-  // passed to the constructor and
-  // used by the DoFHandler used by
-  // this cell, are the same
-  typedef FEValuesBase<dim,spacedim> FEVB;
-  Assert (static_cast<const FiniteElementData<dim>&>(*this->fe) ==
-          static_cast<const FiniteElementData<dim>&>(cell->get_fe()),
-          typename FEVB::ExcFEDontMatch());
 
-  this->maybe_invalidate_previous_present_cell (cell);
-  this->check_cell_similarity(cell);
-
-  reset_pointer_in_place_if_possible<typename FEValuesBase<dim,spacedim>::template
-  CellIterator<TriaIterator<DoFCellAccessor<DoFHandlerType<dim,spacedim>,
-                                            lda> > > >
-  (this->present_cell, cell);
-
-  // this was the part of the work
-  // that is dependent on the actual
-  // data type of the iterator. now
-  // pass on to the function doing
-  // the real work.
-  do_reinit ();
-}
 
 
 

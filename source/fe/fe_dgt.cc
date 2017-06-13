@@ -137,9 +137,12 @@ double
 FE_DGT<dim,spacedim>::shape_value (const typename Triangulation<dim,spacedim>::cell_iterator & cell,
                                    const unsigned int i,
                                    const Point<dim> &p) const
+
 {
   Assert (i<this->dofs_per_cell, ExcIndexRange(i, 0, this->dofs_per_cell));
-  const Point<dim> pp = (p - cell->center()) / cell->diameter();
+
+  const Point<dim> pp = (Point<dim>)(p-cell->center())/cell->diameter();  //const Point<dim> pp = (p - cell->center())/cell->diameter(); jfk
+
   return polynomial_space.compute_value(i, pp);
 }
 
@@ -157,7 +160,7 @@ FE_DGT<dim,spacedim>::shape_values (const typename Triangulation<dim,spacedim>::
 
   for(unsigned int q=0; q<p.size(); ++q)
   {
-      const Point<dim> pp = (p[q] - cell->center()) / cell->diameter();
+      const Point<dim> pp = (Point<dim>)(p[q] - cell->center()) / cell->diameter();
       for(unsigned int i=0; i<this->dofs_per_cell; ++i)
          values[i][q] = polynomial_space.compute_value(i, pp);
   }
@@ -186,7 +189,7 @@ FE_DGT<dim,spacedim>::shape_value_component
   (void)component;
   Assert (i<this->dofs_per_cell, ExcIndexRange(i, 0, this->dofs_per_cell));
   Assert (component == 0, ExcIndexRange (component, 0, 1));
-  const Point<dim> pp = (p - cell->center()) / cell->diameter();
+  const Point<dim> pp =(Point<dim>) (p - cell->center()) / cell->diameter();
   return polynomial_space.compute_value(i, pp);
 }
 
@@ -208,7 +211,7 @@ FE_DGT<dim,spacedim>::shape_grad (const typename Triangulation<dim,spacedim>::ce
                                   const Point<dim> &p) const
 {
   Assert (i<this->dofs_per_cell, ExcIndexRange(i, 0, this->dofs_per_cell));
-  const Point<dim> pp = (p - cell->center()) / cell->diameter();
+  const Point<dim> pp = (Point<dim>)(p - cell->center()) / cell->diameter();
   return polynomial_space.compute_grad(i, pp) / cell->diameter();
 }
 
@@ -233,7 +236,7 @@ FE_DGT<dim,spacedim>::shape_grad_component
 {
   Assert (i<this->dofs_per_cell, ExcIndexRange(i, 0, this->dofs_per_cell));
   Assert (component == 0, ExcIndexRange (component, 0, 1));
-  const Point<dim> pp = (p - cell->center()) / cell->diameter();
+  const Point<dim> pp =(Point<dim>) (p - cell->center()) / cell->diameter();
   return polynomial_space.compute_grad(i, pp) / cell->diameter();
 }
 
@@ -256,7 +259,7 @@ FE_DGT<dim,spacedim>::shape_grad_grad
    const Point<dim> &p) const
 {
   Assert (i<this->dofs_per_cell, ExcIndexRange(i, 0, this->dofs_per_cell));
-  const Point<dim> pp = (p - cell->center()) / cell->diameter();
+  const Point<dim> pp = (Point<dim>)(p - cell->center()) / cell->diameter();
   return polynomial_space.compute_grad_grad(i, pp) / cell->diameter() / cell->diameter();
 }
 
@@ -281,7 +284,7 @@ FE_DGT<dim,spacedim>::shape_grad_grad_component
 {
   Assert (i<this->dofs_per_cell, ExcIndexRange(i, 0, this->dofs_per_cell));
   Assert (component == 0, ExcIndexRange (component, 0, 1));
-  const Point<dim> pp = (p - cell->center()) / cell->diameter();
+  const Point<dim> pp = (Point<dim>)(p - cell->center()) / cell->diameter();
   return polynomial_space.compute_grad_grad(i, pp) / cell->diameter() / cell->diameter();
 }
 
@@ -351,8 +354,8 @@ get_data (const UpdateFlags                                                    u
 template <int dim, int spacedim>
 void
 FE_DGT<dim,spacedim>::
-fill_fe_values (const typename Triangulation<dim,spacedim>::cell_iterator &,
-                const CellSimilarity::Similarity                                     ,
+fill_fe_values (const typename Triangulation<dim,spacedim>::cell_iterator & cell, //jfk bunka
+                const CellSimilarity::Similarity,
                 const Quadrature<dim> &,
                 const Mapping<dim,spacedim> &,
                 const typename Mapping<dim,spacedim>::InternalDataBase &,
@@ -376,7 +379,7 @@ fill_fe_values (const typename Triangulation<dim,spacedim>::cell_iterator &,
   if (fe_internal.update_each & (update_values | update_gradients))
     for (unsigned int i=0; i<n_q_points; ++i)
       {
-        const Point<dim> p = (mapping_data.quadrature_points[i] - cell->center())/h; //taylor
+        const Point<dim> p = (Point<dim>)(mapping_data.quadrature_points[i] - cell->center())/h; //taylor
         polynomial_space.compute(p, //mapping_data.quadrature_points[i],
                                  values, grads, grad_grads,
                                  empty_vector_of_3rd_order_tensors,
@@ -400,7 +403,7 @@ fill_fe_values (const typename Triangulation<dim,spacedim>::cell_iterator &,
 template <int dim, int spacedim>
 void
 FE_DGT<dim,spacedim>::
-fill_fe_face_values (const typename Triangulation<dim,spacedim>::cell_iterator &,
+fill_fe_face_values (const typename Triangulation<dim,spacedim>::cell_iterator & cell,
                      const unsigned int                                                   ,
                      const Quadrature<dim-1>                                             &,
                      const Mapping<dim,spacedim> &,
@@ -410,6 +413,7 @@ fill_fe_face_values (const typename Triangulation<dim,spacedim>::cell_iterator &
                      dealii::internal::FEValues::FiniteElementRelatedData<dim, spacedim> &output_data) const
 {
  
+
 
 
   Assert (fe_internal.update_each & update_quadrature_points, ExcInternalError());
@@ -427,7 +431,7 @@ fill_fe_face_values (const typename Triangulation<dim,spacedim>::cell_iterator &
   if (fe_internal.update_each & (update_values | update_gradients))
     for (unsigned int i=0; i<n_q_points; ++i)
       {
-        const Point<dim> p = (mapping_data.quadrature_points[i] - cell->center())/h; //taylor
+        const Point<dim> p =(Point<dim>) (mapping_data.quadrature_points[i] - cell->center())/h; //taylor
         polynomial_space.compute(p, //mapping_data.quadrature_points[i],
                                  values, grads, grad_grads,
                                  empty_vector_of_3rd_order_tensors,
@@ -451,7 +455,7 @@ fill_fe_face_values (const typename Triangulation<dim,spacedim>::cell_iterator &
 template <int dim, int spacedim>
 void
 FE_DGT<dim,spacedim>::
-fill_fe_subface_values (const typename Triangulation<dim,spacedim>::cell_iterator &,
+fill_fe_subface_values (const typename Triangulation<dim,spacedim>::cell_iterator & cell,
                         const unsigned int                                                   ,
                         const unsigned int                                                   ,
                         const Quadrature<dim-1>                                             &,
@@ -476,7 +480,7 @@ fill_fe_subface_values (const typename Triangulation<dim,spacedim>::cell_iterato
   if (fe_internal.update_each & (update_values | update_gradients))
     for (unsigned int i=0; i<n_q_points; ++i)
       {
-        const Point<dim> p = (mapping_data.quadrature_points[i] - cell->center())/h; //taylor
+        const Point<dim> p = (Point<dim>)(mapping_data.quadrature_points[i] - cell->center())/h; //taylor
         polynomial_space.compute(p, //mapping_data.quadrature_points[i],
                                  values, grads, grad_grads,
                                  empty_vector_of_3rd_order_tensors,
