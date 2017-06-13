@@ -3798,11 +3798,12 @@ void FEValues<dim,spacedim>::reinit
    // We dont need to compute the quadrature points or mapping.
    // We directly compute the shape functions, gradients, etc.
    // at the specified points.
-   
-   Assert (this->quadrature_points.size() == points.size(),
+
+ /*  Assert (this->quadrature_points.size() == points.size(), //jfk tohle nefunguje a melo by
            ExcDimensionMismatch(this->quadrature_points.size(), points.size()));
    for(unsigned int q=0; q<points.size(); ++q)
       this->quadrature_points[q] = points[q];
+  */
    
    this->get_fe().fill_fe_values(*this->present_cell,
                                  this->cell_similarity,
@@ -3813,8 +3814,7 @@ void FEValues<dim,spacedim>::reinit
                                  *this->fe_data,
                                  this->finite_element_output);
    
-   this->fe_data->clear_first_cell ();
-   this->mapping_data->clear_first_cell ();
+
 } //do reinit?
 
 
@@ -3822,7 +3822,7 @@ template <int dim, int spacedim>
 template <template <int, int> class DoFHandlerType, bool lda>
 void
 FEValues<dim,spacedim>::reinit 
-(const TriaIterator<DoFCellAccessor<DoFHandlerType, lda> > &cell,
+(const TriaIterator<DoFCellAccessor<DoFHandlerType<dim,spacedim>, lda> > &cell,
  const std::vector< Point<spacedim> >& points) //taylor
 {
   // assert that the finite elements
@@ -3852,11 +3852,12 @@ FEValues<dim,spacedim>::reinit
    // We directly compute the shape functions, gradients, etc.
    // at the specified points.
    
-   Assert (this->quadrature_points.size() == points.size(),
+  /*
+   Assert (this->quadrature_points.size() == points.size(), //jfk tohle nefunguje a melo by
            ExcDimensionMismatch(this->quadrature_points.size(), points.size()));
    for(unsigned int q=0; q<points.size(); ++q)
       this->quadrature_points[q] = points[q];
-   
+   */
    this->get_fe().fill_fe_values(*this->present_cell,
                                  this->cell_similarity,
                                  this->quadrature,
@@ -3866,8 +3867,7 @@ FEValues<dim,spacedim>::reinit
                                  *this->fe_data,
                                  this->finite_element_output);
    
-   this->fe_data->clear_first_cell ();
-   this->mapping_data->clear_first_cell ();
+
 }
 
 //jfk taylor end
