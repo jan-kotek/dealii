@@ -3770,12 +3770,12 @@ FEValues<dim,spacedim>::reinit
 }
 
 
-//jfk taylor++++++++++++++++++++++++++++++++++
+// FE_DGT
 
 template <int dim, int spacedim>
 void FEValues<dim,spacedim>::reinit
 (const typename Triangulation<dim,spacedim>::cell_iterator &cell,
- const std::vector< Point<spacedim> >& points) //taylor
+ const std::vector< Point<spacedim> >& points)
 {
    // no FE in this cell, so no assertion
    // necessary here
@@ -3799,12 +3799,13 @@ void FEValues<dim,spacedim>::reinit
    // We directly compute the shape functions, gradients, etc.
    // at the specified points.
 
- /*  Assert (this->quadrature_points.size() == points.size(), //jfk tohle nefunguje a melo by
-           ExcDimensionMismatch(this->quadrature_points.size(), points.size()));
-   for(unsigned int q=0; q<points.size(); ++q)
-      this->quadrature_points[q] = points[q];
-  */
-   
+   Assert (this->mapping_output.quadrature_points.size() == points.size(),
+             ExcDimensionMismatch(this->mapping_output.quadrature_points.size(), points.size()));
+     for(unsigned int q=0; q<points.size(); ++q)
+        this->mapping_output.quadrature_points[q] = points[q];
+
+
+
    this->get_fe().fill_fe_values(*this->present_cell,
                                  this->cell_similarity,
                                  this->quadrature,
@@ -3815,9 +3816,10 @@ void FEValues<dim,spacedim>::reinit
                                  this->finite_element_output);
    
 
-} //do reinit?
 
+}
 
+//FE_DGT
 template <int dim, int spacedim>
 template <template <int, int> class DoFHandlerType, bool lda>
 void
@@ -3852,12 +3854,13 @@ FEValues<dim,spacedim>::reinit
    // We directly compute the shape functions, gradients, etc.
    // at the specified points.
    
-  /*
-   Assert (this->quadrature_points.size() == points.size(), //jfk tohle nefunguje a melo by
-           ExcDimensionMismatch(this->quadrature_points.size(), points.size()));
-   for(unsigned int q=0; q<points.size(); ++q)
-      this->quadrature_points[q] = points[q];
-   */
+  Assert (this->mapping_output.quadrature_points.size() == points.size(), //jfk tohle nefunguje a melo by
+            ExcDimensionMismatch(this->mapping_output.quadrature_points.size(), points.size()));
+    for(unsigned int q=0; q<points.size(); ++q)
+       this->mapping_output.quadrature_points[q] = points[q];
+
+    //do reinit?
+
    this->get_fe().fill_fe_values(*this->present_cell,
                                  this->cell_similarity,
                                  this->quadrature,
@@ -3870,7 +3873,7 @@ FEValues<dim,spacedim>::reinit
 
 }
 
-//jfk taylor end
+
 
 
 

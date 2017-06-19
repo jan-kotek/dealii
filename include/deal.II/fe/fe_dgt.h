@@ -1,6 +1,4 @@
 // ---------------------------------------------------------------------
-// jfk 15.12.14
-// fe_dgp_nonparametric.h 30036 2013-07-18 16:55:32Z maier $
 //
 // Copyright (C) 2002 - 2017 by the deal.II authors
 //
@@ -26,15 +24,15 @@
 
 DEAL_II_NAMESPACE_OPEN
 
-template <int dim> class PolynomialSpace;//maybe remove
-template <int dim, int spacedim> class MappingQ;//maybe remove
-
 
 /*!@addtogroup fe */
 /*@{*/
 
 /**
+ *
  * Discontinuous finite elements evaluated at the mapped quadrature points.
+ *
+ * T - Taylor
  *
  * Warning: this class does not work properly, yet. Don't use it!
  *
@@ -629,13 +627,8 @@ private:
    */
   template <int, int> friend class FE_DGT;
 
-  /**
-   * Allows @p MappingQ class to
-   * access to build_renumbering
-   * function.
-   */
-  template <int, int> friend class MappingQ;//coud be removed
-//    friend class MappingQ<dim>;
+
+
 };
 
 /*@}*/

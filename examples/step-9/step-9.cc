@@ -42,7 +42,7 @@
 #include <deal.II/numerics/vector_tools.h>
 #include <deal.II/numerics/matrix_tools.h>
 #include <deal.II/numerics/data_out.h>
-#include <deal.II/fe/fe_q.h>
+#include <deal.II/fe/fe_dgt.h> //fe_q
 #include <deal.II/grid/grid_out.h>
 
 // The following two files provide classes and information for multithreaded
@@ -156,7 +156,7 @@ namespace Step9
     Triangulation<dim>   triangulation;
     DoFHandler<dim>      dof_handler;
 
-    FE_Q<dim>            fe;
+    FE_DGT<dim>            fe; //FE_Q
 
     ConstraintMatrix     hanging_node_constraints;
 

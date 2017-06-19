@@ -2819,7 +2819,7 @@ public:
     template <template <int, int> class DoFHandlerType, bool level_dof_access>
     void reinit (const TriaIterator<DoFCellAccessor<DoFHandlerType<dim,spacedim>,level_dof_access> > &cell);
 
-  //JFK taylor - maybe remove original lines (2802-2818) when run
+  //FE_DGT
 
   /* Computes shape functions, gradients, etc. at the specified
    *  @p points. We do not compute quadrature points, jacobians, normals
@@ -2829,12 +2829,12 @@ public:
   void reinit
      (
      const typename Triangulation<dim,spacedim>::cell_iterator &cell,
-     const std::vector< Point<spacedim> >& points //taylor
+     const std::vector< Point<spacedim> >& points
      );
 
 
 
-
+  //FE_DGT
     /* Computes shape functions, gradients, etc. at the specified
      *  @p points. We do not compute quadrature points, jacobians, normals
      *  etc. which depend on the cell mapping. This will be used only
@@ -2844,13 +2844,8 @@ public:
     void reinit
        (
        const TriaIterator<DoFCellAccessor<DoFHandlerType<dim,spacedim>,level_dof_access> > &cell,
-       const std::vector< Point<spacedim> >& points //taylor
+       const std::vector< Point<spacedim> >& points
        );
-
-
-  //JFK taylor end
-
-
 
 
 

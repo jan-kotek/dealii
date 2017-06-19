@@ -64,7 +64,7 @@ FE_DGT<dim,spacedim>::FE_DGT (const unsigned int degree)
   // restriction can be defined
   // through projection for
   // discontinuous elements, but is
-  // presently not implemented for DGPNonparametric
+  // presently not implemented for DGT
   // elements.
   //
   // if it were, then the following
@@ -141,7 +141,7 @@ FE_DGT<dim,spacedim>::shape_value (const typename Triangulation<dim,spacedim>::c
 {
   Assert (i<this->dofs_per_cell, ExcIndexRange(i, 0, this->dofs_per_cell));
 
-  const Point<dim> pp = (Point<dim>)(p-cell->center())/cell->diameter();  //const Point<dim> pp = (p - cell->center())/cell->diameter(); jfk
+  const Point<dim> pp = (Point<dim>)(p-cell->center())/cell->diameter();
 
   return polynomial_space.compute_value(i, pp);
 }
@@ -331,7 +331,7 @@ FE_DGT<dim,spacedim>::
 get_data (const UpdateFlags                                                    update_flags,
           const Mapping<dim,spacedim> &,
           const Quadrature<dim> &,
-          dealii::internal::FEValues::FiniteElementRelatedData<dim, spacedim> &/*output_data*/) const
+          dealii::internal::FEValues::FiniteElementRelatedData<dim, spacedim> & ) const
 {
   // generate a new data object
   typename FiniteElement<dim,spacedim>::InternalDataBase *data
@@ -354,7 +354,7 @@ get_data (const UpdateFlags                                                    u
 template <int dim, int spacedim>
 void
 FE_DGT<dim,spacedim>::
-fill_fe_values (const typename Triangulation<dim,spacedim>::cell_iterator & cell, //jfk bunka
+fill_fe_values (const typename Triangulation<dim,spacedim>::cell_iterator & cell,
                 const CellSimilarity::Similarity,
                 const Quadrature<dim> &,
                 const Mapping<dim,spacedim> &,
@@ -370,16 +370,16 @@ fill_fe_values (const typename Triangulation<dim,spacedim>::cell_iterator & cell
   std::vector<double> values(fe_internal.update_each & update_values ? this->dofs_per_cell : 0);
   std::vector<Tensor<1,dim> > grads(fe_internal.update_each & update_gradients ? this->dofs_per_cell : 0);
   std::vector<Tensor<2,dim> > grad_grads(fe_internal.update_each & update_hessians ? this->dofs_per_cell : 0);
-  std::vector<Tensor<3,dim> > empty_vector_of_3rd_order_tensors;//not used here, as well as elsewhere. not added everywhere!
-  std::vector<Tensor<4,dim> > empty_vector_of_4th_order_tensors; //same as above and not well implemented in deal
+  std::vector<Tensor<3,dim> > empty_vector_of_3rd_order_tensors; //not used
+  std::vector<Tensor<4,dim> > empty_vector_of_4th_order_tensors; //not used
   
   
-  double h = cell->diameter(); //taylor
+  double h = cell->diameter();
 
   if (fe_internal.update_each & (update_values | update_gradients))
     for (unsigned int i=0; i<n_q_points; ++i)
       {
-        const Point<dim> p = (Point<dim>)(mapping_data.quadrature_points[i] - cell->center())/h; //taylor
+        const Point<dim> p = (Point<dim>)(mapping_data.quadrature_points[i] - cell->center())/h;
         polynomial_space.compute(p, //mapping_data.quadrature_points[i],
                                  values, grads, grad_grads,
                                  empty_vector_of_3rd_order_tensors,
@@ -394,7 +394,7 @@ fill_fe_values (const typename Triangulation<dim,spacedim>::cell_iterator & cell
 
         if (fe_internal.update_each & update_hessians)
           for (unsigned int k=0; k<this->dofs_per_cell; ++k)
-            output_data.shape_hessians[k][i] = grad_grads[k]/h/h;//might want to add higher derivatives
+            output_data.shape_hessians[k][i] = grad_grads[k]/h/h;
       }
 }
 
@@ -423,15 +423,15 @@ fill_fe_face_values (const typename Triangulation<dim,spacedim>::cell_iterator &
  std::vector<double> values(fe_internal.update_each & update_values ? this->dofs_per_cell : 0);
  std::vector<Tensor<1,dim> > grads(fe_internal.update_each & update_gradients ? this->dofs_per_cell : 0);
  std::vector<Tensor<2,dim> > grad_grads(fe_internal.update_each & update_hessians ? this->dofs_per_cell : 0);
- std::vector<Tensor<3,dim> > empty_vector_of_3rd_order_tensors; //not used here, as well as elsewhere. not added everywhere!
+ std::vector<Tensor<3,dim> > empty_vector_of_3rd_order_tensors; //not used now
  std::vector<Tensor<4,dim> > empty_vector_of_4th_order_tensors;
  
-  double h = cell->diameter(); //taylor
+  double h = cell->diameter();
 
   if (fe_internal.update_each & (update_values | update_gradients))
     for (unsigned int i=0; i<n_q_points; ++i)
       {
-        const Point<dim> p =(Point<dim>) (mapping_data.quadrature_points[i] - cell->center())/h; //taylor
+        const Point<dim> p =(Point<dim>) (mapping_data.quadrature_points[i] - cell->center())/h;
         polynomial_space.compute(p, //mapping_data.quadrature_points[i],
                                  values, grads, grad_grads,
                                  empty_vector_of_3rd_order_tensors,
@@ -480,7 +480,7 @@ fill_fe_subface_values (const typename Triangulation<dim,spacedim>::cell_iterato
   if (fe_internal.update_each & (update_values | update_gradients))
     for (unsigned int i=0; i<n_q_points; ++i)
       {
-        const Point<dim> p = (Point<dim>)(mapping_data.quadrature_points[i] - cell->center())/h; //taylor
+        const Point<dim> p = (Point<dim>)(mapping_data.quadrature_points[i] - cell->center())/h;
         polynomial_space.compute(p, //mapping_data.quadrature_points[i],
                                  values, grads, grad_grads,
                                  empty_vector_of_3rd_order_tensors,

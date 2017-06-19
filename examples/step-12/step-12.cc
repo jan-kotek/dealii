@@ -202,7 +202,7 @@ namespace Step12
   AdvectionProblem<dim>::AdvectionProblem ()
     :
     mapping (),
-    fe (1),
+    fe (2),
     dof_handler (triangulation)
   {}
 
@@ -570,6 +570,24 @@ namespace Step12
     GridOut grid_out;
     grid_out.write_eps (triangulation, eps_output);
 
+    // Output of the solution in vtk format.
+    filename = "sol-";
+    filename += ('0' + cycle);
+    Assert (cycle < 10, ExcInternalError());
+
+    filename += ".vtk";
+    deallog << "Writing solution to <" << filename << ">" << std::endl;
+    std::ofstream outfile (filename.c_str());
+
+    DataOut<dim> data_out;
+    data_out.attach_dof_handler (dof_handler);
+    data_out.add_data_vector (solution, "u");
+
+    data_out.build_patches ();
+
+    data_out.write_vtk(outfile);
+    
+    
     // Output of the solution in gnuplot format.
     filename = "sol-";
     filename += ('0' + cycle);
@@ -586,6 +604,9 @@ namespace Step12
     data_out.build_patches ();
 
     data_out.write_gnuplot(gnuplot_output);
+  }
+    
+    
   }
 
 
